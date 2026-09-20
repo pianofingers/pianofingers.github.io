@@ -435,7 +435,7 @@
     gap:clamp(10px,1.6vw,20px);
     flex:2 1 auto;
     align-items:stretch;
-    min-height:220px;
+    min-height:0;
   }
   .panel{
     border:1.5px solid var(--line-strong);
@@ -581,7 +581,9 @@
     justify-content:space-evenly;
     align-items:center;
     gap:10px;
-    margin:auto 0;
+    flex:1 1 auto;
+    min-height:0;
+    width:100%;
   }
   .fifths-wheel-wrap{
     display:none;
@@ -607,6 +609,7 @@
     opacity:1;
     transition:opacity 0.2s ease;
     min-width:0;
+    min-height:0;
   }
   .hand-block.faded{ opacity:0.28; }
   .hand-title{
@@ -619,9 +622,12 @@
   .hand-title .accent{ font-weight:700; }
   .hand-image-wrap{
     position:relative;
-    width:clamp(66px,10.2vh,108px);
+    height:clamp(66px,10.2vh,108px);
+    width:auto;
+    max-height:100%;
+    flex-shrink:1;
   }
-  .hand-image-wrap img{ width:100%; display:block; }
+  .hand-image-wrap img{ height:100%; width:auto; max-height:100%; display:block; }
   .finger-num{
     position:absolute;
     transform:translate(-50%, calc(-100% - 6px));
@@ -1322,6 +1328,15 @@ function getRawScaleData(){
 
   if(state.scaleMode && state.scaleMode !== 'none'){
     const offsets = MODE_OFFSETS[state.scaleMode];
+    // Ionian and Aeolian are identical, note-for-note, to Major and Natural
+    // Minor — reuse the same hand-verified fingering tables rather than the
+    // generic heuristic, so the fingering matches exactly either way you get there.
+    if(state.scaleMode === 'ionian'){
+      return { rootName, label: MODE_LABELS.ionian, offsets, fingersRH: majorRH[rootName], fingersLH: majorLH[rootName], suggested: false };
+    }
+    if(state.scaleMode === 'aeolian'){
+      return { rootName, label: MODE_LABELS.aeolian, offsets, fingersRH: minorRH[rootName], fingersLH: minorLH[rootName], suggested: false };
+    }
     const fingersRH = heuristicRH(offsets, state.tone);
     const fingersLH = heuristicLH(offsets, state.tone);
     return { rootName, label: MODE_LABELS[state.scaleMode], offsets, fingersRH, fingersLH, suggested: true };
@@ -1921,25 +1936,25 @@ function cycleKeysInversion(dir){
 
 document.getElementById('thirdLeft').addEventListener('click', () => {
   if(state.mode === 'scales') cycleScaleMode(-1);
-  else if(state.mode === 'chords') cycleHand(-1);
+  else if(state.mode === 'chords') cycleChordInversion(-1);
   else cycleKeysInversion(-1);
   render();
 });
 document.getElementById('thirdRight').addEventListener('click', () => {
   if(state.mode === 'scales') cycleScaleMode(1);
-  else if(state.mode === 'chords') cycleHand(1);
+  else if(state.mode === 'chords') cycleChordInversion(1);
   else cycleKeysInversion(1);
   render();
 });
 document.getElementById('fourthLeft').addEventListener('click', () => {
   if(state.mode === 'scales') cycleHand(-1);
-  else if(state.mode === 'chords') cycleChordInversion(-1);
+  else if(state.mode === 'chords') cycleHand(-1);
   else cycleHand(-1);
   render();
 });
 document.getElementById('fourthRight').addEventListener('click', () => {
   if(state.mode === 'scales') cycleHand(1);
-  else if(state.mode === 'chords') cycleChordInversion(1);
+  else if(state.mode === 'chords') cycleHand(1);
   else cycleHand(1);
   render();
 });
@@ -1955,11 +1970,11 @@ function render(){
   if(state.mode === 'chords'){
     document.getElementById('secondControlLabel').innerHTML = 'CHOOSE <span class="accent">EXTENSION</span>';
     document.getElementById('scaleValue').textContent = EXTENSIONS[state.extension].label;
-    document.getElementById('thirdControlLabel').innerHTML = 'CHOOSE <span class="accent">HANDS</span>';
-    document.getElementById('thirdValue').textContent = HAND_LABEL[state.hand];
-    document.getElementById('fourthControlLabel').innerHTML = 'CHOOSE <span class="accent">INVERSION</span>';
+    document.getElementById('thirdControlLabel').innerHTML = 'CHOOSE <span class="accent">INVERSION</span>';
     const invList = EXTENSIONS[state.extension].offsets.length === 3 ? INVERSIONS3 : INVERSIONS4;
-    document.getElementById('fourthValue').textContent = invList[state.inversion];
+    document.getElementById('thirdValue').textContent = invList[state.inversion];
+    document.getElementById('fourthControlLabel').innerHTML = 'CHOOSE <span class="accent">HANDS</span>';
+    document.getElementById('fourthValue').textContent = HAND_LABEL[state.hand];
   } else if(state.mode === 'keys'){
     document.getElementById('secondControlLabel').innerHTML = 'CHOOSE <span class="accent">KEY TYPE</span>';
     document.getElementById('scaleValue').textContent = state.keyType === 'minor' ? 'Minor' : 'Major';
